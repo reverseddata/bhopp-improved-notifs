@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bhopp-notifs"
+version = "0.1.0"
+description = "Discord sale alerts and order-chat automations for BHOPP sellers."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "aiohttp>=3.11,<4",
+    "python-dotenv>=1.0,<2",
+    "discord.py>=2.4,<3",
+    "python-socketio[asyncio_client]>=5.11,<6",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[project.scripts]
+bhopp-notifs = "bhopp_notifs.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]

@@ -30,6 +30,7 @@ PAST_POLL = timedelta(seconds=60)
 MAX_CHATS_PER_PASS = 25
 GREET_MAX_AGE = timedelta(hours=6)     # a late start doesn't greet day-old orders
 THANKS_MAX_AGE = timedelta(days=14)
+THANKS_STATES = ("delivered", "completed")
 GIVE_UP_AGE = timedelta(days=30)       # an order that vanished from every list
 BUYER_CAN_CANCEL_HOURS = 12            # from bhopp.com's own order screen
 REMIND_HOURS = 10
@@ -244,13 +245,16 @@ class SaleWatcher:
 
     async def _changed(self, row: OrderRow, current: Order, now: datetime) -> None:
         self.store.update_order(current)
+        # Thanked when the seller marks it delivered. Straight to completed means that mark
+        # fell between two polls; anything else (cancelled, disputed) never gets one.
+        delivered_now = current.state == "delivered" or (
+            current.state == "completed" and row.state == "pending")
+        if (delivered_now and self.prefs.thanks
+                and now - (current.created_at or now) <= THANKS_MAX_AGE):
+            self.store.queue(current, "thanks",
+                             render(self.prefs.text("thanks"), **self.values(current)))
         if current.state == "completed":
-            age = now - (current.created_at or now)
-            thank = self.prefs.thanks and age <= THANKS_MAX_AGE
-            if thank:
-                self.store.queue(current, "thanks",
-                                 render(self.prefs.text("thanks"), **self.values(current)))
-            await self._post(Post(embeds.completed_embed(current, thank),
+            await self._post(Post(embeds.completed_embed(current),
                                   link=("Open order chat", current.chat_url)))
         elif current.state == "cancelled" and row.cancel_state != "done":
             await self._post(Post(embeds.cancelled_embed(current), mention="owner"))
@@ -271,6 +275,9 @@ class SaleWatcher:
 
     async def _deliver(self, s: Step) -> None:
         row = self.store.row(s.order_id)
+        if s.step == "thanks" and row.state not in THANKS_STATES:
+            self.store.step_failed(s)  # cancelled or disputed while it waited to be sent
+            return
         if s.status == "sending" and not self.dry_run:
             seller = row.order.seller_id or self.api.seller_id
             for m in await self.api.messages(s.conversation_id):

@@ -60,7 +60,7 @@ class Commands:
         return self._toggle("auto_reply", "auto_reply", "Auto-reply to new sales", state)
 
     def thanks(self, state: str | None = None) -> str:
-        return self._toggle("thanks", "thanks", "Thank-you after completion", state)
+        return self._toggle("thanks", "thanks", "Thank-you after you mark an order delivered", state)
 
     def online(self, state: str | None = None) -> str:
         if state:

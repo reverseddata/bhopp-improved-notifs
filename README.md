@@ -14,7 +14,8 @@ It uses BHOPP's unofficial API, which can change at any time.
 - **Auto-reply** in the order chat of every new sale.
 - **`/afk 2h`** sends every new sale a notice with the time left. If the buyer types "cancel",
   you get Cancel and refund / Keep order buttons in Discord.
-- **Thank-you message** asking for a good review once an order completes.
+- **Thank-you message** asking for a good review once you mark an order delivered. Cancelled
+  and disputed orders never get one.
 - **Always online** on BHOPP while the bot runs.
 - Pings for disputes, cancelled orders, orders still undelivered after 10 hours, and a BHOPP
   token that is about to expire.
@@ -31,7 +32,7 @@ Only the Discord user in `DISCORD_OWNER_ID` can use these, and replies are priva
 | `/status` | Health, token expiry and every setting |
 | `/alerts ping reminders` | Who a sale pings: `owner`, `everyone` or `off` |
 | `/autoreply on\|off` | Auto-reply to new sales |
-| `/thanks on\|off` | Thank-you message after completion |
+| `/thanks on\|off` | Thank-you message after you mark an order delivered |
 | `/afk duration` | Away for `30m`, `2h`, `1h30m` |
 | `/back` | End AFK early |
 | `/cancelmode ask\|auto` | Buyer types "cancel": ask you first, or cancel and refund by itself |

@@ -396,41 +396,84 @@ def test_dry_run_never_writes_to_bhopp(rig):
 # ---------------------------------------------------------------- after the sale
 
 
-def test_thanks_goes_out_once_on_completion(rig):
+def test_thanks_goes_out_once_when_marked_delivered(rig):
+    rig.start()
+    rig.prefs.thanks = True
+    rig.api.add(oid="o1", created=rig.clock())
+    rig.tick()
+    assert rig.api.sent == []
+    rig.api.set_state("o1", "delivered")
+    rig.tick_later()
+    assert len(rig.bodies()) == 1 and "good review" in rig.bodies()[0]
+    rig.api.finish("o1")
+    rig.tick_later(120)
+    rig.boot()
+    rig.tick_later(120)
+    assert len(rig.bodies()) == 1
+    assert len(rig.poster.titled("Order completed")) == 1
+
+
+def test_no_new_thanks_at_completion_if_delivery_was_already_seen(rig):
+    rig.start()
+    rig.api.add(oid="o1", created=rig.clock())
+    rig.tick()
+    rig.api.set_state("o1", "delivered")
+    rig.tick_later()
+    rig.prefs.thanks = True  # turned on after the delivery: too late for this order
+    rig.api.finish("o1")
+    rig.tick_later(120)
+    assert rig.api.sent == []
+
+
+def test_thanks_when_delivery_and_completion_fall_between_two_polls(rig):
     rig.start()
     rig.prefs.thanks = True
     rig.api.add(oid="o1", created=rig.clock())
     rig.tick()
     rig.api.finish("o1")
     rig.tick_later(120)
-    rig.tick_later(120)
-    rig.boot()
-    rig.tick_later(120)
-    assert [b for b in rig.bodies() if "good review" in b] == [rig.bodies()[0]]
     assert len(rig.bodies()) == 1
-    assert len(rig.poster.titled("Order completed")) == 1
 
 
-def test_thanks_also_works_when_seen_completed_in_the_open_list(rig):
+@pytest.mark.parametrize("state", ["cancelled", "disputed"])
+@pytest.mark.parametrize("open_list", [True, False])
+def test_no_thanks_when_cancelled_or_disputed(rig, state, open_list):
     rig.start()
     rig.prefs.thanks = True
     rig.api.add(oid="o1", created=rig.clock())
     rig.tick()
-    rig.api.set_state("o1", "completed")
-    rig.tick_later()
-    assert len(rig.bodies()) == 1
-
-
-def test_no_thanks_for_delivered_or_cancelled(rig):
-    rig.start()
-    rig.prefs.thanks = True
-    rig.api.add(oid="o1", created=rig.clock())
-    rig.api.add(oid="o2", created=rig.clock())
-    rig.tick()
-    rig.api.set_state("o1", "delivered")
-    rig.api.finish("o2", "cancelled")
+    if open_list:
+        rig.api.set_state("o1", state)
+    else:
+        rig.api.finish("o1", state)
     rig.tick_later(120)
     assert rig.api.sent == []
+    assert rig.store.step("o1", "thanks") is None
+
+
+def test_queued_thanks_is_dropped_if_the_order_is_cancelled_first(rig):
+    rig.start()
+    rig.prefs.thanks = True
+    rig.api.add(oid="o1", created=rig.clock())
+    rig.tick()
+    rig.api.set_state("o1", "delivered")
+    rig.api.send_error = BhoppError(500, "boom")
+    rig.tick_later()
+    rig.api.send_error = None
+    rig.api.finish("o1", "cancelled")
+    rig.tick_later(120)
+    rig.tick_later(120)
+    assert rig.api.sent == []
+    assert rig.store.step("o1", "thanks").status == "failed"
+    assert rig.poster.titled("Could not send") == []
+
+
+def test_cancelled_order_pings_the_owner(rig):
+    rig.start()
+    rig.api.add(oid="o2", created=rig.clock())
+    rig.tick()
+    rig.api.finish("o2", "cancelled")
+    rig.tick_later(120)
     assert rig.poster.titled("Order cancelled")[0].mention == "owner"
 
 

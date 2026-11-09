@@ -116,11 +116,9 @@ def _order_embed(order: Order, title: str, text: str, color: int) -> dict:
     }
 
 
-def completed_embed(order: Order, thanks_sent: bool) -> dict:
-    text = f"**{money(order.net)}** earned."
-    if thanks_sent:
-        text += " The thank-you message is going to the buyer."
-    return _order_embed(order, f"💰 Order completed: {_headline(order)}", text, GOLD)
+def completed_embed(order: Order) -> dict:
+    return _order_embed(order, f"💰 Order completed: {_headline(order)}",
+                        f"**{money(order.net)}** earned.", GOLD)
 
 
 def cancelled_embed(order: Order) -> dict:

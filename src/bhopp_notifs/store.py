@@ -237,8 +237,8 @@ class Prefs:
                        "deliver as soon as I can."),
         "afk": ('Seller is currently offline for another {left}, if you would like to cancel '
                 'please type "cancel"'),
-        "thanks": ("Thanks for your order, {buyer}! If everything went well, a good review "
-                   "would really help me out ⭐"),
+        "thanks": ("Thanks for your order, {buyer}! Once you've confirmed you got everything, "
+                   "a good review would really help me out ⭐"),
         "cancel_ack": ("Got your cancel request. The seller has been notified and will confirm "
                        "it as soon as possible."),
         "cancel_done": "Your order has been cancelled and the full amount refunded.",
